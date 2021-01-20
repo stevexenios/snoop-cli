@@ -2,6 +2,7 @@
 from collections import defaultdict
 from statistics import mean
 import pandas as pd
+import numpy as np
 import time
 
 
@@ -104,11 +105,11 @@ class Compute:
         # So sort df by frequency of stays then remove duplicates
         self.df = self.df.groupby(sn)
         self.df = self.df.head(1)
+        print('Successful removal of duplicate rows!')
 
         # setting the column for Search Score and values associated for each row
-        self.df[ss] = self.df.apply(lambda row: (row[ps]*0.5 + row['frequency']*0.25), axis = 1)
+        self.df[ss] = self.df.apply(lambda row: row[rs] if row['frequency'] >= 10 else ((row[ps] * 0.1 * (10-row['frequency'])) + (row[rs] * 0.1 * row['frequency'])), axis = 1)
         print('Successful completion of calculating Search Score!')
-
 
         # Finalize df to 5 columns, with RS and SS column values rounded to 2 decimal places
         # Noticed that the frequency or stay count doesn't go too high such as to cause rating
@@ -116,7 +117,7 @@ class Compute:
         self.df = self.df[[se, sn, ps, rs, ss]]
         self.df[rs] = self.df.apply(lambda row: round(row[rs], 2), axis = 1)
         self.df[ss] = self.df.apply(lambda row: round(row[ss], 2), axis = 1)
-        print('Successful completion of 5 columns and rounding!')
+        print('Successful completion of columns and rounding!')
 
         
         # Sorting the data frame by:
@@ -124,6 +125,9 @@ class Compute:
         # 2. Sitter Name alphabetically (tie-breaker).
         self.df = self.df.sort_values([ss, sn], ascending=[False, True])
 
+        # Dropping index column
+        self.df = self.df.reset_index(drop=True)
+        
         # output to sitters.csv in directory ../out/
         self.df.to_csv(output_path)
         
@@ -131,8 +135,4 @@ class Compute:
         print('Output file location: {}'.format(output_path))
 
     
-# file = '../in/reviews.csv'
-# d = Compute(file)
-# d.compute()
-# d.print_columns()
-# d.print_memory_usage()
+
